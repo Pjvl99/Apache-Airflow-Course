@@ -12,6 +12,7 @@ from airflow.operators.bash import BashOperator
 from airflow.providers.google.cloud.transfers.local_to_gcs import LocalFilesystemToGCSOperator
 from airflow.sensors.bash import BashSensor
 from airflow.decorators import task
+from ayudas.slack import slack_notificaciones
 import os
 
 default_args = {
@@ -43,6 +44,7 @@ with DAG(
     schedule_interval='0 12 * * *', #Corra diariamente al medio dia
     catchup=False,
     max_active_runs=1,
+    on_failure_callback=slack_notificaciones,
     tags=['laliga']
 ) as dag:
     '''

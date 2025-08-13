@@ -5,6 +5,7 @@ from airflow.operators.bash import BashOperator
 from airflow.providers.google.cloud.operators.dataform import DataformCreateRepositoryOperator, DataformCreateWorkspaceOperator
 from airflow.models import Variable
 from airflow.decorators import task
+from ayudas.slack import slack_notificaciones
 import os
 
 default_args = {
@@ -22,7 +23,8 @@ with DAG(
     schedule_interval='0 12 * * *', #Corra diariamente al medio dia
     catchup=False,
     max_active_runs=1,
-    tags=['dataform']
+    tags=['dataform'],
+    on_failure_callback=slack_notificaciones
 ) as dag:
     
     crear_repo = DataformCreateRepositoryOperator(
