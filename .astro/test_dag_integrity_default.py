@@ -54,7 +54,7 @@ def os_getenv_monkeypatch(key: str, *args, **kwargs):
 os.getenv = os_getenv_monkeypatch
 # # =========== /MONKEYPATCH OS.GETENV() ===========
 
-# =========== MONKEYPATCH VARIABLE.GET() ===========
+# =========== MONKEYPATCH os.environ.get() ===========
 
 
 class magic_dict(dict):
@@ -80,8 +80,8 @@ def variable_get_monkeypatch(key: str, default_var=_no_default, deserialize_json
     return "NON_DEFAULT_MOCKED_VARIABLE_VALUE"
 
 
-Variable.get = variable_get_monkeypatch
-# # =========== /MONKEYPATCH VARIABLE.GET() ===========
+os.environ.get = variable_get_monkeypatch
+# # =========== /MONKEYPATCH os.environ.get() ===========
 
 
 @contextmanager

@@ -91,17 +91,8 @@ steps:
     args:
       - -c
       - |
-        set -euo pipefail
-        put_secret () {
-          local name="$1" ; local value="$2"
-          if gcloud secrets describe "$name" >/dev/null 2>&1; then
-            printf '%s' "$value" | gcloud secrets versions add "$name" --data-file=-
-          else
-            printf '%s' "$value" | gcloud secrets create "$name" --data-file=- --replication-policy=automatic
-          fi
-        }
-        # Graba tus variables como secretos de Secret Manager:
-        put_secret "airflow-variables-bucket"     "${_DAGS_PREFIX_}"
-        put_secret "airflow-variables-repository" "${_VAR_REPOSITORY}"
-        put_secret "airflow-variables-project"    "${_VAR_PROJECT}"
-        put_secret "airflow-variables-location"   "${_VAR_LOCATION}"
+        SLACK_TOKEN="$(gcloud secrets versions access latest --secret=slack)"
+
+        gcloud composer environments update "curso-airflow" \
+        --location us-east1 \
+        --update-env-variables=bucket=${_DAGS_PREFIX_},repositorio=${_VAR_REPOSITORY},proyecto=${_VAR_PROJECT},region=${_VAR_LOCATION},slack=$$SLACK_TOKEN

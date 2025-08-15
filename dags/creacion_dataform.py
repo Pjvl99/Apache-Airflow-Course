@@ -29,16 +29,16 @@ with DAG(
     
     crear_repo = DataformCreateRepositoryOperator(
         task_id='hacer_repo',
-        project_id=Variable.get("proyecto"),
-        region=Variable.get("region"),
-        repository_id=Variable.get("repositorio")
+        project_id=os.environ.get("proyecto"),
+        region=os.environ.get("region"),
+        repository_id=os.environ.get("repositorio")
     )
 
     espacio_trabajo = DataformCreateWorkspaceOperator(
         task_id='crear_espacio_de_trabajo',
-        project_id=Variable.get("proyecto"),
-        region=Variable.get("region"),
-        repository_id=Variable.get("repositorio"),
+        project_id=os.environ.get("proyecto"),
+        region=os.environ.get("region"),
+        repository_id=os.environ.get("repositorio"),
         workspace_id="pablo"
     )
 

@@ -1,5 +1,5 @@
-from airflow.hooks.base import BaseHook
 from slack_sdk import WebClient
+import os
 
 def slack_notificaciones(context):
     '''
@@ -11,10 +11,7 @@ def slack_notificaciones(context):
     fecha_ejecucion = context.get("execution_date")
     log_url = context.get("task_instance").log_url
 
-    slack_conn_id = 'slack'
-    slack_conn = BaseHook.get_connection(slack_conn_id)
-
-    token = slack_conn.password
+    token = os.environ.get("slack")
 
     cliente = WebClient(token=token)
 

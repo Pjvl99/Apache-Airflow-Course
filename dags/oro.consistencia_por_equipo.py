@@ -15,9 +15,9 @@ default_args = {
 
 nombre_de_flujo_de_trabajo = 'consistencia_por_equipo'
 
-proyecto = f'projects/{Variable.get("proyecto")}'
-localizacion = f'locations/{Variable.get("region")}'
-repositorio = f'repositories/{Variable.get("repositorio")}'
+proyecto = f'projects/{os.environ.get("proyecto")}'
+localizacion = f'locations/{os.environ.get("region")}'
+repositorio = f'repositories/{os.environ.get("repositorio")}'
 tarea = f'workflowConfigs/{nombre_de_flujo_de_trabajo}'
 
 with DAG(
@@ -33,9 +33,9 @@ with DAG(
     
     create_workflow_invocation = DataformCreateWorkflowInvocationOperator(
         task_id="create-workflow-invocation",
-        project_id=Variable.get("proyecto"),
-        region=Variable.get("region"),
-        repository_id=Variable.get("repositorio"),
+        project_id=os.environ.get("proyecto"),
+        region=os.environ.get("region"),
+        repository_id=os.environ.get("repositorio"),
         asynchronous=False,
         workflow_invocation={
             "workflow_config": f"{proyecto}/{localizacion}/{repositorio}/{tarea}" #La ubicacion y nombre de tarea

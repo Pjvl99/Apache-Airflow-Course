@@ -4,9 +4,10 @@ from airflow import DAG #Vamos a definir el DAG
 from airflow.operators.python import PythonOperator #Operador el molde para definir una tarea, vamos a interactuar con una función de Python
 from datetime import datetime  # Calendarización
 from airflow.models import Variable
+import os
 
 def saludo():
-    mensaje = Variable.get("saludo", default_var="Hola Mundo") #Si esto no existe va a fallar
+    mensaje = os.environ.get("saludo", default_var="Hola Mundo") #Si esto no existe va a fallar
     print(mensaje)
 
 with DAG(
