@@ -1,0 +1,79 @@
+# cloudbuild.yaml
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  # ---- Composer target ----
+  _COMPOSER_ENV: curso-airflow         
+  _LOCATION: us-east1              
+
+  # ---- Airflow Variables to set in the environment ----
+  _VAR_REPOSITORY: transformacion
+  _VAR_PROJECT: melodic-subject-467218-g1
+  _VAR_LOCATION: us-east1
+  _DAGS_PREFIX_: gs://us-east1-curso-airflow-b7cd9d90-bucket
+
+steps:
+  # 1) Sync local /dags folder to the Composer DAGs bucket (deletes removed files)
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    id: "Sync DAGs to Composer"
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        source /workspace/composer_env.out
+        if [[ ! -d "./dags" ]]; then
+          echo "ERROR: ./dags directory not found in repo root." >&2
+          exit 1
+        fi
+        # DAGS_PREFIX already points to gs://.../dags
+        gsutil -m rsync -r -d ./dags "${DAGS_PREFIX}"
+
+  # 2) Update Composer environment PyPI packages from requirements.txt
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    id: "Update PyPI packages from requirements.txt"
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        if [[ ! -f "requirements.txt" ]]; then
+          echo "requirements.txt not found in repo root; skipping." >&2
+          exit 1
+        fi
+        gcloud composer environments update "${_COMPOSER_ENV}" \
+          --location="${_LOCATION}" \
+          --update-pypi-packages-from-file="requirements.txt"
+
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    id: "Sync Airflow connection 'slack' from Secret Manager"
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        # 1) Read Slack bot token from your existing secret "slack"
+        SLACK_TOKEN="$(gcloud secrets versions access latest --secret=slack)"
+
+        # 2) Build JSON for an Airflow connection that only uses 'password'
+        #    (your code reads BaseHook.get_connection('slack').password)
+        CONN_JSON=$(printf '{"conn_type":"generic","password":"%s"}' "$SLACK_TOKEN")
+
+        printf '%s' "$CONN_JSON" | gcloud secrets create "airflow-connections-slack" --data-file=- --replication-policy=automatic
+        fi
+
+  # 4) Set Airflow Variables (idempotent)
+  #    Equivalent to: airflow variables --set <key> <value>
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    id: "Set Airflow Variables"
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        gcloud composer environments run "${_COMPOSER_ENV}" --location="${_LOCATION}" variables -- --set bucket "${_DAGS_PREFIX_}"
+        gcloud composer environments run "${_COMPOSER_ENV}" --location="${_LOCATION}" variables -- --set repository "${_VAR_REPOSITORY}"
+        gcloud composer environments run "${_COMPOSER_ENV}" --location="${_LOCATION}" variables -- --set project "${_VAR_PROJECT}"
+        gcloud composer environments run "${_COMPOSER_ENV}" --location="${_LOCATION}" variables -- --set location "${_VAR_LOCATION}"
