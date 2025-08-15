@@ -37,7 +37,7 @@ with DAG(
         runner="DataflowRunner",
         py_file=f"{os.environ.get('bucket')}/apache_beam_plata.py",
         pipeline_options={
-            "sdk_container_image" : "us-east1-docker.pkg.dev/melodic-subject-467218-g1/dataflow/dataflow_canalizacion:latest"
+            "sdk_container_image" : "us-east1-docker.pkg.dev/melodic-subject-467218-g1/apachebeam/apache_beam_template:latest"
         },
         py_options=[],
         py_requirements=[
