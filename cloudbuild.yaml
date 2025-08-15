@@ -17,6 +17,12 @@ substitutions:
   _DAGS_PREFIX_: gs://us-east1-curso-airflow-b7cd9d90-bucket/dags
 
 steps:
+
+  - name: python
+    id: "Instalar paquetes de python"
+    entrypoint: pip
+    args: ["install", "-r", "requirements.txt", "--user"]
+
   # 1) Sync local /dags folder to the Composer DAGs bucket (deletes removed files)
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     id: "Sync DAGs to Composer"
