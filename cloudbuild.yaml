@@ -65,24 +65,24 @@ steps:
   #         --location="${_LOCATION}" \
   #         --update-pypi-packages-from-file="requirements.txt"
 
-  # 3) Crear/actualizar conexión 'slack' como secreto de Airflow en Secret Manager
-  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-    id: "Sync Airflow connection 'slack' from Secret Manager"
-    entrypoint: bash
-    args:
-      - -c
-      - |
-        set -euo pipefail
+  # # 3) Crear/actualizar conexión 'slack' como secreto de Airflow en Secret Manager
+  # - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+  #   id: "Sync Airflow connection 'slack' from Secret Manager"
+  #   entrypoint: bash
+  #   args:
+  #     - -c
+  #     - |
+  #       set -euo pipefail
 
-        # Variables de SHELL => normales aquí (no son sustituciones de Cloud Build)
-        SLACK_TOKEN="$(gcloud secrets versions access latest --secret=slack)"
+  #       # Variables de SHELL => normales aquí (no son sustituciones de Cloud Build)
+  #       SLACK_TOKEN="$(gcloud secrets versions access latest --secret=slack)"
 
-        # Para que Cloud Build NO intente sustituir, usa $$ al referenciarlas en el YAML
-        CONN_JSON=$(printf '{"conn_type":"generic","password":"%s"}' "$$SLACK_TOKEN")
+  #       # Para que Cloud Build NO intente sustituir, usa $$ al referenciarlas en el YAML
+  #       CONN_JSON=$(printf '{"conn_type":"generic","password":"%s"}' "$$SLACK_TOKEN")
 
-        # Idempotente: si existe el secreto, añadimos una nueva versión; si no, lo creamos.
-        printf '%s' "$$CONN_JSON" | gcloud secrets create "airflow-connections-slack" --data-file=- --replication-policy=automatic
-        fi
+  #       # Idempotente: si existe el secreto, añadimos una nueva versión; si no, lo creamos.
+  #       printf '%s' "$$CONN_JSON" | gcloud secrets create "airflow-connections-slack" --data-file=- --replication-policy=automatic
+  #       fi
 
   # 4) Set Airflow Variables (idempotent)
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
