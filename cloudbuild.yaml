@@ -23,15 +23,15 @@ steps:
     entrypoint: pip
     args: ["install", "-r", "requirements.txt", "--user"]
 
-  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-    id: "Activando secretos"
-    entrypoint: bash
-    args:
-      - -c
-      - |
-        gcloud composer environments update "${_COMPOSER_ENV}" \
-          --location "${_VAR_LOCATION}" \
-          --update-airflow-configs=secrets-backend=airflow.providers.google.cloud.secrets.secret_manager.CloudSecretManagerBackend,secrets-backend_kwargs='{"project_id":"${_VAR_PROJECT}"}'
+  # - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+  #   id: "Activando secretos"
+  #   entrypoint: bash
+  #   args:
+  #     - -c
+  #     - |
+  #       gcloud composer environments update "${_COMPOSER_ENV}" \
+  #         --location "${_VAR_LOCATION}" \
+  #         --update-airflow-configs=secrets-backend=airflow.providers.google.cloud.secrets.secret_manager.CloudSecretManagerBackend,secrets-backend_kwargs='{"project_id":"${_VAR_PROJECT}"}'
 
   # 1) Sync local /dags folder to the Composer DAGs bucket (deletes removed files)
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
@@ -49,21 +49,21 @@ steps:
         gsutil -m rsync -r -d ./dags "${_DAGS_PREFIX_}"
 
   # 2) Update Composer environment PyPI packages from requirements.txt
-  # - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-  #   id: "Update PyPI packages from requirements.txt"
-  #   entrypoint: bash
-  #   args:
-  #     - -c
-  #     - |
-  #       set -euo pipefail
-  #       if [[ ! -f "requirements.txt" ]]; then
-  #         echo "requirements.txt not found in repo root; skipping." >&2
-  #         exit 1
-  #       fi
-  #       # Sustituciones de Cloud Build: un solo $
-  #       gcloud composer environments update "${_COMPOSER_ENV}" \
-  #         --location="${_LOCATION}" \
-  #         --update-pypi-packages-from-file="requirements.txt"
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    id: "Update PyPI packages from requirements.txt"
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        if [[ ! -f "requirements.txt" ]]; then
+          echo "requirements.txt not found in repo root; skipping." >&2
+          exit 1
+        fi
+        # Sustituciones de Cloud Build: un solo $
+        gcloud composer environments update "${_COMPOSER_ENV}" \
+          --location="${_LOCATION}" \
+          --update-pypi-packages-from-file="requirements.txt"
 
   # 3) Crear/actualizar conexión 'slack' como secreto de Airflow en Secret Manager
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
