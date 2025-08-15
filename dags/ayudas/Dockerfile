@@ -1,4 +1,4 @@
-FROM apache/beam_python3.12_sdk:2.66.0
+FROM apache/beam_python3.11_sdk:2.66.0
 
 RUN pip install --no-cache-dir \
     beautifulsoup4 \
