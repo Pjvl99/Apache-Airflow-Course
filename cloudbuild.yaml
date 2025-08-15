@@ -23,6 +23,15 @@ steps:
     entrypoint: pip
     args: ["install", "-r", "requirements.txt", "--user"]
 
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    id: "Activando secretos"
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gcloud composer environments update "${_COMPOSER_ENV}" \
+          --location="${_LOCATION}" \
+          --update-airflow-configs=secrets.backend=airflow.providers.google.cloud.secrets.secret_manager.CloudSecretManagerBackend,secrets.backend_kwargs="{\"project_id\":\"${_VAR_PROJECT}\"}"
   # 1) Sync local /dags folder to the Composer DAGs bucket (deletes removed files)
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     id: "Sync DAGs to Composer"
@@ -71,22 +80,27 @@ steps:
         CONN_JSON=$(printf '{"conn_type":"generic","password":"%s"}' "$$SLACK_TOKEN")
 
         # Idempotente: si existe el secreto, añadimos una nueva versión; si no, lo creamos.
-        if gcloud secrets describe "airflow-connections-slack" >/dev/null 2>&1; then
-          printf '%s' "$$CONN_JSON" | gcloud secrets versions add "airflow-connections-slack" --data-file=-
-        else
-          printf '%s' "$$CONN_JSON" | gcloud secrets create "airflow-connections-slack" --data-file=- --replication-policy=automatic
+        printf '%s' "$$CONN_JSON" | gcloud secrets create "airflow-connections-slack" --data-file=- --replication-policy=automatic
         fi
 
   # 4) Set Airflow Variables (idempotent)
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-    id: "Set Airflow Variables"
+    id: "Sync Airflow Variables (Secret Manager)"
     entrypoint: bash
     args:
       - -c
       - |
         set -euo pipefail
-        # Todas son SUSTITUCIONES de Cloud Build => un solo $
-        gcloud composer environments run "${_COMPOSER_ENV}" --location="${_LOCATION}" variables -- --set bucket "${_DAGS_PREFIX_}"
-        gcloud composer environments run "${_COMPOSER_ENV}" --location="${_LOCATION}" variables -- --set repository "${_VAR_REPOSITORY}"
-        gcloud composer environments run "${_COMPOSER_ENV}" --location="${_LOCATION}" variables -- --set project "${_VAR_PROJECT}"
-        gcloud composer environments run "${_COMPOSER_ENV}" --location="${_LOCATION}" variables -- --set location "${_VAR_LOCATION}"
+        put_secret () {
+          local name="$1" ; local value="$2"
+          if gcloud secrets describe "$name" >/dev/null 2>&1; then
+            printf '%s' "$value" | gcloud secrets versions add "$name" --data-file=-
+          else
+            printf '%s' "$value" | gcloud secrets create "$name" --data-file=- --replication-policy=automatic
+          fi
+        }
+        # Graba tus variables como secretos de Secret Manager:
+        put_secret "airflow-variables-bucket"     "${_DAGS_PREFIX_}"
+        put_secret "airflow-variables-repository" "${_VAR_REPOSITORY}"
+        put_secret "airflow-variables-project"    "${_VAR_PROJECT}"
+        put_secret "airflow-variables-location"   "${_VAR_LOCATION}"
