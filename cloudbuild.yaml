@@ -30,8 +30,9 @@ steps:
       - -c
       - |
         gcloud composer environments update "${_COMPOSER_ENV}" \
-          --location="${_LOCATION}" \
-          --update-airflow-configs=secrets.backend=airflow.providers.google.cloud.secrets.secret_manager.CloudSecretManagerBackend,secrets.backend_kwargs="{\"project_id\":\"${_VAR_PROJECT}\"}"
+          --location "${_VAR_LOCATION}" \
+          --update-airflow-configs=secrets-backend=airflow.providers.google.cloud.secrets.secret_manager.CloudSecretManagerBackend,secrets-backend_kwargs='{"project_id":"${_VAR_PROJECT}"}'
+
   # 1) Sync local /dags folder to the Composer DAGs bucket (deletes removed files)
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     id: "Sync DAGs to Composer"
