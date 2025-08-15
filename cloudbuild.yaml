@@ -85,14 +85,14 @@ steps:
   #       fi
 
   # 4) Set Airflow Variables (idempotent)
-  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-    id: "Sync Airflow Variables (Secret Manager)"
-    entrypoint: bash
-    args:
-      - -c
-      - |
-        SLACK_TOKEN="$(gcloud secrets versions access latest --secret=slack)"
+  # - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+  #   id: "Sync Airflow Variables (Secret Manager)"
+  #   entrypoint: bash
+  #   args:
+  #     - -c
+  #     - |
+  #       SLACK_TOKEN="$(gcloud secrets versions access latest --secret=slack)"
 
-        gcloud composer environments update "curso-airflow" \
-        --location us-east1 \
-        --update-env-variables=bucket=${_DAGS_PREFIX_},repositorio=${_VAR_REPOSITORY},proyecto=${_VAR_PROJECT},region=${_VAR_LOCATION},slack=$$SLACK_TOKEN
+  #       gcloud composer environments update "curso-airflow" \
+  #       --location us-east1 \
+  #       --update-env-variables=bucket=${_DAGS_PREFIX_},repositorio=${_VAR_REPOSITORY},proyecto=${_VAR_PROJECT},region=${_VAR_LOCATION},slack=$$SLACK_TOKEN

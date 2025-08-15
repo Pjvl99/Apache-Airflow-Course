@@ -35,7 +35,7 @@ with DAG(
     crear_canalizacion_dataflow = BeamRunPythonPipelineOperator( #Este no solo valida su conexion en la interfaz de airflow sino que usa gcloud (sistema O) tmb para validar.
         task_id="iniciar_canalizacion_python",
         runner="DataflowRunner",
-        py_file=f"{os.environ.get("bucket")}/apache_beam_plata.py",
+        py_file=f"{os.environ.get('bucket')}/apache_beam_plata.py",
         pipeline_options={
             "sdk_container_image" : "us-east1-docker.pkg.dev/melodic-subject-467218-g1/dataflow/dataflow_canalizacion:latest"
         },
