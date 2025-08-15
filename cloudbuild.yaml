@@ -27,8 +27,7 @@ steps:
           echo "ERROR: ./dags directory not found in repo root." >&2
           exit 1
         fi
-        # DAGS_PREFIX already points to gs://.../dags
-        gsutil -m rsync -r -d ./dags "$${DAGS_PREFIX}"
+        gsutil -m rsync -r -d ./dags "$${_DAGS_PREFIX_}"
 
   # 2) Update Composer environment PyPI packages from requirements.txt
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
