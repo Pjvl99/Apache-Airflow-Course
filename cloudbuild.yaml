@@ -29,7 +29,7 @@ steps:
           exit 1
         fi
         # DAGS_PREFIX already points to gs://.../dags
-        gsutil -m rsync -r -d ./dags "${DAGS_PREFIX}"
+        gsutil -m rsync -r -d ./dags "$${DAGS_PREFIX}"
 
   # 2) Update Composer environment PyPI packages from requirements.txt
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
@@ -43,8 +43,8 @@ steps:
           echo "requirements.txt not found in repo root; skipping." >&2
           exit 1
         fi
-        gcloud composer environments update "${_COMPOSER_ENV}" \
-          --location="${_LOCATION}" \
+        gcloud composer environments update "$${_COMPOSER_ENV}" \
+          --location="$${_LOCATION}" \
           --update-pypi-packages-from-file="requirements.txt"
 
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
@@ -73,7 +73,7 @@ steps:
       - -c
       - |
         set -euo pipefail
-        gcloud composer environments run "${_COMPOSER_ENV}" --location="${_LOCATION}" variables -- --set bucket "${_DAGS_PREFIX_}"
-        gcloud composer environments run "${_COMPOSER_ENV}" --location="${_LOCATION}" variables -- --set repository "${_VAR_REPOSITORY}"
-        gcloud composer environments run "${_COMPOSER_ENV}" --location="${_LOCATION}" variables -- --set project "${_VAR_PROJECT}"
-        gcloud composer environments run "${_COMPOSER_ENV}" --location="${_LOCATION}" variables -- --set location "${_VAR_LOCATION}"
+        gcloud composer environments run "$${_COMPOSER_ENV}" --location="$${_LOCATION}" variables -- --set bucket "$${_DAGS_PREFIX_}"
+        gcloud composer environments run "$${_COMPOSER_ENV}" --location="$${_LOCATION}" variables -- --set repository "$${_VAR_REPOSITORY}"
+        gcloud composer environments run "$${_COMPOSER_ENV}" --location="$${_LOCATION}" variables -- --set project "$${_VAR_PROJECT}"
+        gcloud composer environments run "$${_COMPOSER_ENV}" --location="$${_LOCATION}" variables -- --set location "$${_VAR_LOCATION}"
