@@ -1,18 +1,20 @@
 # cloudbuild.yaml
-
 options:
   logging: CLOUD_LOGGING_ONLY
 
 substitutions:
   # ---- Composer target ----
-  _COMPOSER_ENV: curso-airflow         
-  _LOCATION: us-east1              
+  _COMPOSER_ENV: curso-airflow
+  _LOCATION: us-east1
 
   # ---- Airflow Variables to set in the environment ----
   _VAR_REPOSITORY: transformacion
   _VAR_PROJECT: melodic-subject-467218-g1
   _VAR_LOCATION: us-east1
-  _DAGS_PREFIX_: gs://us-east1-curso-airflow-b7cd9d90-bucket
+
+  # IMPORTANTE: para Composer 2 normalmente el prefijo incluye /dags
+  # Ejemplo: gs://<bucket-id>/dags
+  _DAGS_PREFIX_: gs://us-east1-curso-airflow-b7cd9d90-bucket/dags
 
 steps:
   # 1) Sync local /dags folder to the Composer DAGs bucket (deletes removed files)
@@ -27,7 +29,8 @@ steps:
           echo "ERROR: ./dags directory not found in repo root." >&2
           exit 1
         fi
-        gsutil -m rsync -r -d ./dags "$${_DAGS_PREFIX_}"
+        # Sustitución de Cloud Build => usa UN solo $
+        gsutil -m rsync -r -d ./dags "${_DAGS_PREFIX_}"
 
   # 2) Update Composer environment PyPI packages from requirements.txt
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
@@ -41,10 +44,12 @@ steps:
           echo "requirements.txt not found in repo root; skipping." >&2
           exit 1
         fi
-        gcloud composer environments update "$${_COMPOSER_ENV}" \
-          --location="$${_LOCATION}" \
+        # Sustituciones de Cloud Build: un solo $
+        gcloud composer environments update "${_COMPOSER_ENV}" \
+          --location="${_LOCATION}" \
           --update-pypi-packages-from-file="requirements.txt"
 
+  # 3) Crear/actualizar conexión 'slack' como secreto de Airflow en Secret Manager
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     id: "Sync Airflow connection 'slack' from Secret Manager"
     entrypoint: bash
@@ -52,18 +57,21 @@ steps:
       - -c
       - |
         set -euo pipefail
-        # 1) Read Slack bot token from your existing secret "slack"
+
+        # Variables de SHELL => normales aquí (no son sustituciones de Cloud Build)
         SLACK_TOKEN="$(gcloud secrets versions access latest --secret=slack)"
 
-        # 2) Build JSON for an Airflow connection that only uses 'password'
-        #    (your code reads BaseHook.get_connection('slack').password)
+        # Para que Cloud Build NO intente sustituir, usa $$ al referenciarlas en el YAML
         CONN_JSON=$(printf '{"conn_type":"generic","password":"%s"}' "$$SLACK_TOKEN")
 
-        printf '%s' "$$CONN_JSON" | gcloud secrets create "airflow-connections-slack" --data-file=- --replication-policy=automatic
+        # Idempotente: si existe el secreto, añadimos una nueva versión; si no, lo creamos.
+        if gcloud secrets describe "airflow-connections-slack" >/dev/null 2>&1; then
+          printf '%s' "$$CONN_JSON" | gcloud secrets versions add "airflow-connections-slack" --data-file=-
+        else
+          printf '%s' "$$CONN_JSON" | gcloud secrets create "airflow-connections-slack" --data-file=- --replication-policy=automatic
         fi
 
   # 4) Set Airflow Variables (idempotent)
-  #    Equivalent to: airflow variables --set <key> <value>
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     id: "Set Airflow Variables"
     entrypoint: bash
@@ -71,7 +79,8 @@ steps:
       - -c
       - |
         set -euo pipefail
-        gcloud composer environments run "$${_COMPOSER_ENV}" --location="$${_LOCATION}" variables -- --set bucket "$${_DAGS_PREFIX_}"
-        gcloud composer environments run "$${_COMPOSER_ENV}" --location="$${_LOCATION}" variables -- --set repository "$${_VAR_REPOSITORY}"
-        gcloud composer environments run "$${_COMPOSER_ENV}" --location="$${_LOCATION}" variables -- --set project "$${_VAR_PROJECT}"
-        gcloud composer environments run "$${_COMPOSER_ENV}" --location="$${_LOCATION}" variables -- --set location "$${_VAR_LOCATION}"
+        # Todas son SUSTITUCIONES de Cloud Build => un solo $
+        gcloud composer environments run "${_COMPOSER_ENV}" --location="${_LOCATION}" variables -- --set bucket "${_DAGS_PREFIX_}"
+        gcloud composer environments run "${_COMPOSER_ENV}" --location="${_LOCATION}" variables -- --set repository "${_VAR_REPOSITORY}"
+        gcloud composer environments run "${_COMPOSER_ENV}" --location="${_LOCATION}" variables -- --set project "${_VAR_PROJECT}"
+        gcloud composer environments run "${_COMPOSER_ENV}" --location="${_LOCATION}" variables -- --set location "${_VAR_LOCATION}"
