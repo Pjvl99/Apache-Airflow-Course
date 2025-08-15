@@ -1,7 +1,7 @@
 FROM apache/beam_python3.11_sdk:2.66.0
 
 RUN pip install --no-cache-dir \
-    beautifulsoup4 \
+    lxml \
     html5lib==1.1 \
     six>=1.16.0 \
     webencodings>=0.5.1 \

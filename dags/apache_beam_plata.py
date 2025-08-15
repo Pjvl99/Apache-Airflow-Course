@@ -15,7 +15,7 @@ class TransformacionHTML(beam.DoFn): #Tengo que pasarle el beam.DoFn para marcar
         4. Se va a subir a google cloud storage
         '''
         nombre = archivo.metadata.path #path de google cloud storage
-        df_lista = pd.read_html(archivo.read().decode('utf-8'), flavor="bs4") #Retorna una lista de dataframes
+        df_lista = pd.read_html(archivo.read().decode('utf-8')) #Retorna una lista de dataframes
         df = df_lista[0]
         print("Procesando temporada:", nombre)
         df_nuevo = self.limpieza(df, nombre) #99-2000 1998-99
