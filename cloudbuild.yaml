@@ -49,41 +49,21 @@ steps:
         gsutil -m rsync -r -d ./dags "${_DAGS_PREFIX_}"
 
   # 2) Update Composer environment PyPI packages from requirements.txt
-  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-    id: "Update PyPI packages from requirements.txt (sanitized)"
-    entrypoint: bash
-    args:
-      - -c
-      - |
-        set -euo pipefail
-
-        if [[ ! -f "requirements.txt" ]]; then
-          echo "requirements.txt not found in repo root; skipping." >&2
-          exit 1
-        fi
-
-        # 1) Crear una versión "sanitizada" SIN apache-airflow ni providers
-        SANITIZED="/workspace/requirements.sanitized.txt"
-        # - Quita comentarios y líneas vacías
-        # - Quita apache-airflow (cualquier pin)
-        # - Quita todos los apache-airflow-providers-*
-        # - Quita líneas de constraints (-c / --constraint) si las hubiera
-        grep -Eiv '^\s*(#|$)' requirements.txt \
-          | grep -Eiv '^\s*apache-airflow([<>=~! ]|$)' \
-          | grep -Eiv '^\s*apache-airflow-providers-[a-z0-9-]+' \
-          | grep -Eiv '^\s*(-c|--constraint)\b' \
-          > "$SANITIZED"
-
-        echo "---- Sanitized requirements (to be installed) ----"
-        cat "$SANITIZED" || true
-        echo "-------------------------------------------------"
-
-        # 2) Instalar SOLO los paquetes "normales" (p. ej., slack-sdk, scrapy, dataform, etc.)
-        #    Nota: Sustituciones de Cloud Build => usa UN solo $
-        gcloud composer environments update "${_COMPOSER_ENV}" \
-          --location="${_LOCATION}" \
-          --update-pypi-packages-from-file="$SANITIZED"
-
+  # - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+  #   id: "Update PyPI packages from requirements.txt"
+  #   entrypoint: bash
+  #   args:
+  #     - -c
+  #     - |
+  #       set -euo pipefail
+  #       if [[ ! -f "requirements.txt" ]]; then
+  #         echo "requirements.txt not found in repo root; skipping." >&2
+  #         exit 1
+  #       fi
+  #       # Sustituciones de Cloud Build: un solo $
+  #       gcloud composer environments update "${_COMPOSER_ENV}" \
+  #         --location="${_LOCATION}" \
+  #         --update-pypi-packages-from-file="requirements.txt"
 
   # 3) Crear/actualizar conexión 'slack' como secreto de Airflow en Secret Manager
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
