@@ -59,7 +59,7 @@ steps:
 
         # 2) Build JSON for an Airflow connection that only uses 'password'
         #    (your code reads BaseHook.get_connection('slack').password)
-        CONN_JSON=$(printf '{"conn_type":"generic","password":"%s"}' "$SLACK_TOKEN")
+        CONN_JSON=$(printf '{"conn_type":"generic","password":"%s"}' "$$SLACK_TOKEN")
 
         printf '%s' "$CONN_JSON" | gcloud secrets create "airflow-connections-slack" --data-file=- --replication-policy=automatic
         fi
