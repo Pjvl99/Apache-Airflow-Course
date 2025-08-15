@@ -23,7 +23,6 @@ steps:
       - -c
       - |
         set -euo pipefail
-        source /workspace/composer_env.out
         if [[ ! -d "./dags" ]]; then
           echo "ERROR: ./dags directory not found in repo root." >&2
           exit 1
