@@ -1,4 +1,4 @@
-# Van a estar las intrucciones de que se va a ejecutar
+# cloudbuild.yaml
 options:
   logging: CLOUD_LOGGING_ONLY
 
@@ -25,7 +25,7 @@ steps: #Paso #1
           exit 1
         fi
         # Sustitución de Cloud Build => usa UN solo $
-        gsutil -m rsync -r -d ./dags "${_DAGS_PREFIX_}"
+        gsutil -m rsync -r -d "./dags" "${_DAGS_PREFIX_}"
 
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim #Paso #2
     id: "Instalar los paquetes de python desde requirements.txt"
