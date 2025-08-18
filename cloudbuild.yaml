@@ -10,7 +10,7 @@ substitutions:
   _VAR_PROJECT: melodic-subject-467218-g1
   _VAR_LOCATION: us-east1
 
-  _DAGS_PREFIX: gs://us-east1-curso-airflow-cc3978e2-bucket/dags
+  _DAGS_PREFIX: gs://us-east1-curso-airflow-cc3978e2-bucket/dags/
 
 steps: #Paso #1
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
