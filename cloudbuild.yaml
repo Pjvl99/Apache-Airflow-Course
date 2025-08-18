@@ -1,0 +1,58 @@
+# Van a estar las intrucciones de que se va a ejecutar
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _COMPOSER_ENV: curso-airflow
+  _LOCATION: us-east1
+
+  _VAR_REPOSITORY: transformacion
+  _VAR_PROJECT: melodic-subject-467218-g1
+  _VAR_LOCATION: us-east1
+
+  _DAGS_PREFIX: gs://us-east1-curso-airflow-cc3978e2-bucket/dags
+
+steps: #Paso #1
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    id: "Sincronizar DAGs de github al composer"
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        if [[ ! -d "./dags" ]]; then
+          echo "ERROR: ./dags directory not found in repo root." >&2
+          exit 1
+        fi
+        # Sustitución de Cloud Build => usa UN solo $
+        gsutil -m rsync -r -d ./dags "${_DAGS_PREFIX_}"
+
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim #Paso #2
+    id: "Instalar los paquetes de python desde requirements.txt"
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        if [[ ! -f "requirements.txt" ]]; then
+          echo "requirements.txt not found in repo root; skipping." >&2
+          exit 1
+        fi
+        # Sustituciones de Cloud Build: un solo $
+        gcloud composer environments update "${_COMPOSER_ENV}" \
+          --location="${_LOCATION}" \
+          --update-pypi-packages-from-file="requirements.txt" || \
+        echo "INFO: No changes or update failed (non-critical)."
+
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    id: "Sincronizar variables de ambiente y secretos a composer"
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        SLACK_TOKEN="$(gcloud secrets versions access latest --secret=slack)"
+
+        gcloud composer environments update "${_COMPOSER_ENV}" \
+          --location="${_LOCATION}" \
+        --update-env-variables=bucket=${_DAGS_PREFIX_},repositorio=${_VAR_REPOSITORY},proyecto=${_VAR_PROJECT},region=${_VAR_LOCATION},slack=$$SLACK_TOKEN || \
+        echo "INFO: No new variables added or changed."
