@@ -1,48 +1,73 @@
-Overview
-========
+# Data Engineering with Apache Airflow & GCP
 
-Welcome to Astronomer! This project was generated after you ran 'astro dev init' using the Astronomer CLI. This readme describes the contents of the project, as well as how to run Apache Airflow on your local machine.
+This repository contains the practical lessons and code examples for the **Data Engineering Course** delivered as part of the government's digital transformation program. The curriculum focuses on building robust ETL/ELT pipelines using **Apache Airflow**, **Apache Beam (Dataflow)**, and **Google Cloud Platform (GCP)**.
 
-Project Contents
-================
+---
 
-Your Astro project contains the following files and folders:
+## 🏗️ The Medallion Architecture
 
-- dags: This folder contains the Python files for your Airflow DAGs. By default, this directory includes one example DAG:
-    - `example_astronauts`: This DAG shows a simple ETL pipeline example that queries the list of astronauts currently in space from the Open Notify API and prints a statement for each astronaut. The DAG uses the TaskFlow API to define tasks in Python, and dynamic task mapping to dynamically print a statement for each astronaut. For more on how this DAG works, see our [Getting started tutorial](https://www.astronomer.io/docs/learn/get-started-with-airflow).
-- Dockerfile: This file contains a versioned Astro Runtime Docker image that provides a differentiated Airflow experience. If you want to execute other commands or overrides at runtime, specify them here.
-- include: This folder contains any additional files that you want to include as part of your project. It is empty by default.
-- packages.txt: Install OS-level packages needed for your project by adding them to this file. It is empty by default.
-- requirements.txt: Install Python packages needed for your project by adding them to this file. It is empty by default.
-- plugins: Add custom or community plugins for your project to this file. It is empty by default.
-- airflow_settings.yaml: Use this local-only file to specify Airflow Connections, Variables, and Pools instead of entering them in the Airflow UI as you develop DAGs in this project.
+Most of the pipelines in this course follow the **Medallion Architecture**, a data design pattern used to logically organize data in a lakehouse:
 
-Deploy Your Project Locally
-===========================
+1. **Bronze (Raw):** The landing zone. Data is ingested directly from sources (like Scrapy or APIs) in its original format (HTML, JSON, CSV).
+2. **Silver (Cleaned/Filtered):** Data is cleaned, standardized, and validated. We use **Apache Beam/Dataflow** to transform "Bronze" HTML files into structured Parquet files.
+3. **Gold (Curated):** Business-ready data. This layer is usually handled within BigQuery using **Dataform** to create final tables for BI and analytics.
 
-1. Start Airflow on your local machine by running 'astro dev start'.
+---
 
-This command will spin up 4 Docker containers on your machine, each for a different Airflow component:
+## 🕷️ Web Scraping with Scrapy
 
-- Postgres: Airflow's Metadata Database
-- Webserver: The Airflow component responsible for rendering the Airflow UI
-- Scheduler: The Airflow component responsible for monitoring and triggering tasks
-- Triggerer: The Airflow component responsible for triggering deferred tasks
+In this course, we utilize **Scrapy** as our primary ingestion engine.
 
-2. Verify that all 4 Docker containers were created by running 'docker ps'.
+* **Purpose:** To extract historical sports data and astronaut information from various web sources.
+* **Orchestration:** Airflow manages the Scrapy spiders, ensuring they run on schedule and successfully deposit raw files into **Google Cloud Storage (GCS)** buckets (the Bronze layer).
 
-Note: Running 'astro dev start' will start your project with the Airflow Webserver exposed at port 8080 and Postgres exposed at port 5432. If you already have either of those ports allocated, you can either [stop your existing Docker containers or change the port](https://www.astronomer.io/docs/astro/cli/troubleshoot-locally#ports-are-not-available-for-my-local-airflow-webserver).
+---
 
-3. Access the Airflow UI for your local Airflow project. To do so, go to http://localhost:8080/ and log in with 'admin' for both your Username and Password.
+## 🛠️ Apache Airflow: The Orchestrator
 
-You should also be able to access your Postgres Database at 'localhost:5432/postgres'.
+Airflow is the "brain" of our operations. The examples provided ( `ejemplo1.py` through `ejemplo7.py`) cover the core concepts:
 
-Deploy Your Project to Astronomer
-=================================
+* **DAGs & Operators:** Defining workflows and using `PythonOperator` for custom logic.
+* **Sensors:** Using `PythonSensor` to wait for data availability before proceeding (`ejemplo5.py`).
+* **XComs:** Sharing data between tasks, such as passing API results to downstream processing (`ejemplo4.py`).
+* **Branching:** Creating conditional paths in a pipeline based on the day of the week or execution date (`ejemplo7.py`).
+* **Monitoring:** Integrating **Slack notifications** to alert on pipeline failures (`ejemplo6.py`).
 
-If you have an Astronomer account, pushing code to a Deployment on Astronomer is simple. For deploying instructions, refer to Astronomer documentation: https://www.astronomer.io/docs/astro/deploy-code/
+---
 
-Contact
-=======
+## 🌊 Google Cloud Dataflow (Apache Beam)
 
-The Astronomer CLI is maintained with love by the Astronomer team. To report a bug or suggest a change, reach out to our support.
+For heavy-duty transformations (Bronze to Silver), we use **Apache Beam** (running on **Cloud Dataflow**).
+
+**File:** `apache_beam_plata.py`
+This script demonstrates a real-world transformation:
+
+1. **Read:** Matches HTML files in GCS.
+2. **Transform:** The `TransformacionHTML` class cleans table headers, standardizes team names, and enforces data types using `pandas`.
+3. **Write:** Outputs the cleaned data to Parquet format in the Silver bucket, optimized for BigQuery ingestion.
+
+---
+
+## 📊 Google Cloud Dataform
+
+Once data is in BigQuery, we use **Dataform** to manage SQL-based transformations.
+
+**File:** `creacion_dataform.py`
+We automate the infrastructure setup using Airflow:
+
+* **DataformCreateRepositoryOperator:** Creates the central repository for SQLX files.
+* **DataformCreateWorkspaceOperator:** Sets up individual developer environments.
+This ensures that the Gold layer is built using version-controlled, documented, and tested SQL.
+
+---
+
+## 🛠️ Data Architecture Image
+
+<img width="1084" height="373" alt="DataArchitecture" src="https://github.com/user-attachments/assets/9cc8a92f-3875-47a0-840e-b8c93fdb2f02" />
+
+
+## 🚀 How to Use This Repo
+
+1. **Environment Setup:** Ensure you have an Airflow environment (or Astro CLI) and a GCP project.
+2. **Variables:** Set up your GCP project IDs and region in Airflow Variables or Environment Variables.
+3. **Run DAGs:** Start with `ejemplo1.py` to understand basic scheduling and progress toward the complex `multi_rama_ejemplo`.
